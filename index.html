@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>兩輪差速 AGV 路徑規劃模擬器</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <h2>⚙️ 控制面板</h2>
+
+      <!-- Simulation controls -->
+      <section class="panel">
+        <h3>模擬控制</h3>
+        <div class="btn-row">
+          <button id="btn-start">▶ 開始</button>
+          <button id="btn-pause" disabled>⏸ 暫停</button>
+          <button id="btn-reset">↺ 重置</button>
+        </div>
+        <label>
+          速度倍率：<span id="speed-label">1×</span>
+          <input type="range" id="speed-multiplier" min="1" max="15" value="1" step="1">
+        </label>
+      </section>
+
+      <!-- Obstacle tools -->
+      <section class="panel">
+        <h3>障礙物工具</h3>
+        <div class="btn-row">
+          <button id="btn-square" class="active">■ 正方形</button>
+          <button id="btn-circle">● 圓形</button>
+        </div>
+        <p class="hint">左鍵點擊地圖放置障礙物</p>
+        <p class="hint">右鍵點擊地圖設定目標 B</p>
+        <button id="btn-clear-all">🗑 清空所有障礙物</button>
+      </section>
+
+      <!-- Obstacle list -->
+      <section class="panel" id="obstacle-panel">
+        <h3>障礙物清單</h3>
+        <div id="obstacle-list"></div>
+      </section>
+
+      <!-- Telemetry -->
+      <section class="panel" id="telemetry">
+        <h3>📡 即時遙測</h3>
+        <table>
+          <tr><td>位置 X</td><td id="tel-x">0.00 m</td></tr>
+          <tr><td>位置 Y</td><td id="tel-y">0.00 m</td></tr>
+          <tr><td>線速度 V</td><td id="tel-v">0.0 mm/s</td></tr>
+          <tr><td>角速度 ω</td><td id="tel-w">0.000 rad/s</td></tr>
+          <tr><td>左輪 RPM</td><td id="tel-lrpm">0</td></tr>
+          <tr><td>右輪 RPM</td><td id="tel-rrpm">0</td></tr>
+          <tr><td>差速 ΔRPM</td><td id="tel-drpm">0</td></tr>
+        </table>
+        <div id="status-badge" class="badge idle">待機</div>
+      </section>
+    </aside>
+
+    <!-- Canvas area -->
+    <main id="canvas-area">
+      <canvas id="sim-canvas"></canvas>
+    </main>
+  </div>
+
+  <script src="map.js"></script>
+  <script src="agv.js"></script>
+  <script src="navigator.js"></script>
+  <script src="simulator.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

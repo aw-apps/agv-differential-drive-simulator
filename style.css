@@ -1,0 +1,185 @@
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #252836;
+  --primary: #4f8ef7;
+  --accent: #00d4aa;
+  --danger: #f76e6e;
+  --text: #e8eaf0;
+  --text-muted: #8b90a0;
+  --border: #2e3147;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#sidebar h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.btn-row {
+  display: flex;
+  gap: 6px;
+}
+
+button {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s, border-color 0.15s;
+}
+button:hover { background: var(--primary); border-color: var(--primary); }
+button.active { background: var(--primary); border-color: var(--primary); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#btn-start { color: var(--accent); border-color: var(--accent); }
+#btn-start:hover { background: var(--accent); color: #000; }
+#btn-reset { color: var(--danger); border-color: var(--danger); }
+#btn-reset:hover { background: var(--danger); color: #fff; }
+#btn-clear-all { color: var(--danger); font-size: 12px; }
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+label span { color: var(--accent); font-weight: 700; }
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Obstacle list */
+#obstacle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.obstacle-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.obstacle-item input[type="number"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 3px 5px;
+  font-size: 11px;
+  width: 100%;
+}
+
+.obstacle-item .del-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  flex: none;
+  padding: 2px 4px;
+  font-size: 14px;
+}
+
+/* Telemetry */
+#telemetry table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#telemetry td {
+  padding: 3px 4px;
+  font-size: 12px;
+}
+#telemetry td:first-child { color: var(--text-muted); }
+#telemetry td:last-child { color: var(--accent); font-family: monospace; text-align: right; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.badge.idle { background: var(--surface); color: var(--text-muted); }
+.badge.running { background: #1a3a1a; color: var(--accent); }
+.badge.arrived { background: #1a3a2a; color: #00ff88; }
+.badge.avoiding { background: #3a2a00; color: #ffaa00; }
+
+/* ── Canvas ── */
+#canvas-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+#sim-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
