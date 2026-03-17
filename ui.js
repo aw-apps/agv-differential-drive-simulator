@@ -3,6 +3,19 @@
   const canvasArea = document.getElementById('canvas-area');
   let _obsIdCounter = 0;
 
+  // ── Coordinate display bar ──────────────────────────────────────────────
+  const coordBar = document.createElement('div');
+  coordBar.id = 'coord-display';
+  coordBar.style.cssText = [
+    'position:absolute', 'top:0', 'left:0', 'right:0',
+    'padding:3px 10px', 'background:rgba(26,29,39,0.88)',
+    'color:#8b90a0', 'font-family:monospace', 'font-size:11px',
+    'z-index:10', 'pointer-events:none', 'user-select:none',
+    'border-bottom:1px solid #2e3147', 'letter-spacing:0.04em'
+  ].join(';');
+  coordBar.textContent = 'X: —  Y: —';
+  canvasArea.appendChild(coordBar);
+
   function resizeCanvas() {
     canvas.width = canvasArea.clientWidth;
     canvas.height = canvasArea.clientHeight;
@@ -57,7 +70,13 @@
   });
 
   // Hover on canvas triggers re-render so obstacle highlight is responsive in idle state
-  canvas.addEventListener('mousemove', () => {
+  // Also update live world-coordinate display
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const world = simMap.canvasToWorld(cx, cy);
+    coordBar.textContent = `X: ${world.x.toFixed(2)} m  Y: ${world.y.toFixed(2)} m`;
     if (!simulator.running) simulator._render();
   });
 
@@ -119,6 +138,7 @@
   // Control buttons
   document.getElementById('btn-start').addEventListener('click', () => {
     simulator.start();
+    simMap.paused = false;
     document.getElementById('btn-start').disabled = true;
     document.getElementById('btn-pause').disabled = false;
     simulator._updateStatus('running');
@@ -126,8 +146,10 @@
 
   document.getElementById('btn-pause').addEventListener('click', () => {
     simulator.pause();
+    simMap.paused = true;
     document.getElementById('btn-start').disabled = !simulator.target;
     document.getElementById('btn-pause').disabled = true;
+    simulator._render();
     simulator._updateStatus('idle');
   });
 
@@ -138,9 +160,31 @@
     simulator.reset();
     simulator.obstacles = savedObstacles;
     simulator.target = savedTarget;
+    simMap.paused = true;
     simulator._render();
     document.getElementById('btn-start').disabled = !simulator.target;
     document.getElementById('btn-pause').disabled = true;
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (simulator.running) {
+        document.getElementById('btn-pause').click();
+      } else if (simulator.target && !document.getElementById('btn-start').disabled) {
+        document.getElementById('btn-start').click();
+      }
+    } else if (e.code === 'KeyR') {
+      document.getElementById('btn-reset').click();
+    } else if (e.code === 'Escape') {
+      simulator.target = null;
+      simMap.paused = true;
+      document.getElementById('btn-start').disabled = true;
+      simulator._render();
+    }
   });
 
   // Obstacle shape toggle
