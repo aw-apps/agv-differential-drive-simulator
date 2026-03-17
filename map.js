@@ -1,3 +1,20 @@
+class Obstacle {
+  constructor(id, type, x, y) {
+    this.id = id;
+    this.type = type;
+    this.shape = type; // backward-compat alias used by navigator.js clearance calc
+    this.x = x;
+    this.y = y;
+  }
+
+  getBounds() {
+    if (this.type === 'circle') {
+      return { cx: this.x, cy: this.y, r: 0.5 };
+    }
+    return { cx: this.x, cy: this.y, half: 0.5 };
+  }
+}
+
 class SimMap {
   constructor(canvas) {
     this.canvas = canvas;
@@ -11,6 +28,7 @@ class SimMap {
     this._dragMoved = false;
     this._dragStart = { x: 0, y: 0 };
     this._panStart = { x: 0, y: 0 };
+    this._mouseCanvas = { x: 0, y: 0 };
 
     this._setupEvents();
     this._initView();
@@ -73,9 +91,16 @@ class SimMap {
       canvas.style.cursor = 'crosshair';
     });
 
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      this._mouseCanvas = {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    });
+
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
       const canvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
       const canvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
@@ -279,12 +304,18 @@ class SimMap {
     const cp = this.worldToCanvas(obs.x, obs.y);
     const s = this.scale;
 
-    ctx.save();
-    ctx.fillStyle = 'rgba(247, 110, 110, 0.7)';
-    ctx.strokeStyle = '#f76e6e';
-    ctx.lineWidth = 1;
+    // Hover detection (within 0.75m of obstacle center in world coords)
+    const mw = this.canvasToWorld(this._mouseCanvas.x, this._mouseCanvas.y);
+    const dx = mw.x - obs.x;
+    const dy = mw.y - obs.y;
+    const hovered = Math.sqrt(dx * dx + dy * dy) < 0.75;
 
-    if (obs.shape === 'circle') {
+    ctx.save();
+    ctx.fillStyle = hovered ? 'rgba(255,130,130,0.95)' : 'rgba(220,80,80,0.85)';
+    ctx.strokeStyle = hovered ? '#ff9999' : '#dc5050';
+    ctx.lineWidth = 1.5;
+
+    if (obs.type === 'circle' || obs.shape === 'circle') {
       ctx.beginPath();
       ctx.arc(cp.x, cp.y, s / 2, 0, Math.PI * 2);
       ctx.fill();

@@ -1,6 +1,7 @@
 (function () {
   const canvas = document.getElementById('sim-canvas');
   const canvasArea = document.getElementById('canvas-area');
+  let _obsIdCounter = 0;
 
   function resizeCanvas() {
     canvas.width = canvasArea.clientWidth;
@@ -25,51 +26,68 @@
   simulator._render();
   simulator._updateTelemetry();
 
-  // Right-click: set target
+  // Start is disabled until a target is set
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-start').title = '請先右鍵點擊地圖設定目標 B';
+
+  // Right-click: set target B
   canvas.addEventListener('contextmenu', e => {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
     const world = simMap.canvasToWorld(cx, cy);
-    console.log('Target set:', world);
     simulator.setTarget(world.x, world.y);
+    document.getElementById('btn-start').disabled = false;
   });
 
-  // Left-click: place obstacle (only when not panning)
+  // Left-click: place obstacle snapped to 0.5m grid (only when not panning)
   canvas.addEventListener('click', e => {
-    if (simMap._dragMoved) return; // suppress click after pan
+    if (simMap._dragMoved) return;
     const rect = canvas.getBoundingClientRect();
     const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
     const world = simMap.canvasToWorld(cx, cy);
-    const obs = { x: world.x, y: world.y, shape: window.obstacleShape || 'square' };
+    // Snap to 0.5m grid
+    const snapX = Math.round(world.x * 2) / 2;
+    const snapY = Math.round(world.y * 2) / 2;
+    const obs = new Obstacle(++_obsIdCounter, window.obstacleShape || 'square', snapX, snapY);
     simulator.addObstacle(obs);
-    _addObstacleToList(obs, simulator.obstacles.length - 1);
+    _addObstacleToList(obs);
   });
 
-  function _addObstacleToList(obs, index) {
+  // Hover on canvas triggers re-render so obstacle highlight is responsive in idle state
+  canvas.addEventListener('mousemove', () => {
+    if (!simulator.running) simulator._render();
+  });
+
+  function _addObstacleToList(obs) {
     const list = document.getElementById('obstacle-list');
     const item = document.createElement('div');
     item.className = 'obstacle-item';
-    item.dataset.index = index;
+    item.dataset.obsId = obs.id;
+
+    const typeIcon = document.createElement('span');
+    typeIcon.className = 'obs-type-icon';
+    typeIcon.textContent = obs.type === 'circle' ? '●' : '■';
+    typeIcon.title = obs.type === 'circle' ? '圓形' : '正方形';
 
     const xInput = document.createElement('input');
     xInput.type = 'number';
-    xInput.step = '0.1';
+    xInput.step = '0.5';
     xInput.value = obs.x.toFixed(1);
     xInput.title = 'X (m)';
-    xInput.addEventListener('change', () => {
+    xInput.addEventListener('input', () => {
       obs.x = parseFloat(xInput.value) || 0;
       if (!simulator.running) simulator._render();
     });
 
     const yInput = document.createElement('input');
     yInput.type = 'number';
-    yInput.step = '0.1';
+    yInput.step = '0.5';
     yInput.value = obs.y.toFixed(1);
     yInput.title = 'Y (m)';
-    yInput.addEventListener('change', () => {
+    yInput.addEventListener('input', () => {
       obs.y = parseFloat(yInput.value) || 0;
       if (!simulator.running) simulator._render();
     });
@@ -83,6 +101,7 @@
       item.remove();
     });
 
+    item.appendChild(typeIcon);
     item.appendChild(xInput);
     item.appendChild(yInput);
     item.appendChild(delBtn);
@@ -99,10 +118,6 @@
 
   // Control buttons
   document.getElementById('btn-start').addEventListener('click', () => {
-    if (!simulator.target) {
-      alert('Right-click on the map to set a target first.');
-      return;
-    }
     simulator.start();
     document.getElementById('btn-start').disabled = true;
     document.getElementById('btn-pause').disabled = false;
@@ -111,16 +126,21 @@
 
   document.getElementById('btn-pause').addEventListener('click', () => {
     simulator.pause();
-    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-start').disabled = !simulator.target;
     document.getElementById('btn-pause').disabled = true;
     simulator._updateStatus('idle');
   });
 
   document.getElementById('btn-reset').addEventListener('click', () => {
+    // Preserve obstacles and target; only reset AGV state
+    const savedObstacles = simulator.obstacles;
+    const savedTarget = simulator.target;
     simulator.reset();
-    document.getElementById('btn-start').disabled = false;
+    simulator.obstacles = savedObstacles;
+    simulator.target = savedTarget;
+    simulator._render();
+    document.getElementById('btn-start').disabled = !simulator.target;
     document.getElementById('btn-pause').disabled = true;
-    document.getElementById('obstacle-list').innerHTML = '';
   });
 
   // Obstacle shape toggle
