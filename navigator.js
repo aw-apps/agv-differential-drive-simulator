@@ -10,12 +10,18 @@ class Navigator {
     this.V_SAMPLES = 15;
     this.OMEGA_SAMPLES = 21;
     this.GOAL_THRESHOLD = 0.5; // m
-    this.SAFETY_MARGIN = 0.6;  // m (half of AGV 1m + buffer)
+    this.SAFETY_MARGIN = 0.8;  // m
 
     // Scoring weights
-    this._alpha = 0.6; // heading
-    this._beta = 0.3;  // clearance
+    this._alpha = 0.5; // heading
+    this._beta  = 0.4; // clearance
     this._gamma = 0.1; // velocity
+
+    // Stuck detection
+    this._stuckFrames = 0;
+    this._recoveryFrames = 0;
+    this._lastX = null;
+    this._lastY = null;
   }
 
   hasArrived() {
@@ -33,12 +39,40 @@ class Navigator {
     const obstacles = this.obstacles;
     const target = this.target;
 
+    // Stuck detection: track motion each step
+    if (this._lastX !== null) {
+      const moved = Math.sqrt(
+        (agv.x - this._lastX) ** 2 + (agv.y - this._lastY) ** 2
+      );
+      if (moved < 0.02) {
+        this._stuckFrames++;
+      } else {
+        this._stuckFrames = 0;
+      }
+    }
+    this._lastX = agv.x;
+    this._lastY = agv.y;
+
+    // Recovery mode: allow backward motion for ~60 frames (1 second at 60fps)
+    const inRecovery = this._stuckFrames > 30;
+    if (inRecovery) {
+      this._recoveryFrames++;
+      if (this._recoveryFrames > 60) {
+        this._stuckFrames = 0;
+        this._recoveryFrames = 0;
+      }
+    } else {
+      this._recoveryFrames = 0;
+    }
+
+    const vMin = inRecovery ? -this.V_MAX * 0.3 : 0;
+
     let bestScore = -Infinity;
     let bestV = 0;
     let bestOmega = 0;
 
     for (let vi = 0; vi < this.V_SAMPLES; vi++) {
-      const v = (vi / (this.V_SAMPLES - 1)) * this.V_MAX;
+      const v = vMin + (vi / (this.V_SAMPLES - 1)) * (this.V_MAX - vMin);
 
       for (let wi = 0; wi < this.OMEGA_SAMPLES; wi++) {
         const omega = -this.OMEGA_MAX + (wi / (this.OMEGA_SAMPLES - 1)) * 2 * this.OMEGA_MAX;
@@ -55,7 +89,7 @@ class Navigator {
           sy += v * Math.sin(sTheta) * simDt;
           sTheta += omega * simDt;
 
-          if (_agvClearance(sx, sy, obstacles) < this.SAFETY_MARGIN) {
+          if (_agvClearance(sx, sy, sTheta, obstacles) < this.SAFETY_MARGIN) {
             collide = true;
             break;
           }
@@ -70,11 +104,11 @@ class Navigator {
         const headingScore = 1 - headingDiff / Math.PI;
 
         // clearance_score: min(dist_to_obstacles) / 5.0 capped at 1.0
-        const clearance = _agvClearance(sx, sy, obstacles);
+        const clearance = _agvClearance(sx, sy, sTheta, obstacles);
         const clearanceScore = Math.min(clearance / 5.0, 1.0);
 
-        // velocity_score: v / V_MAX
-        const velocityScore = v / this.V_MAX;
+        // velocity_score: v / V_MAX; penalise reverse so it's only chosen when needed
+        const velocityScore = v >= 0 ? v / this.V_MAX : v / this.V_MAX * 0.3;
 
         const score = this._alpha * headingScore
           + this._beta * clearanceScore
@@ -117,16 +151,17 @@ function _pointToCircleDist(px, py, cx, cy, r) {
   return Math.sqrt(dx * dx + dy * dy) - r;
 }
 
-function _agvClearance(ax, ay, obstacles) {
+function _agvClearance(ax, ay, theta, obstacles) {
   if (obstacles.length === 0) return Infinity;
 
-  // 4 corners of the AGV's 1m × 1m body
-  const corners = [
-    { x: ax - 0.5, y: ay - 0.5 },
-    { x: ax + 0.5, y: ay - 0.5 },
-    { x: ax + 0.5, y: ay + 0.5 },
-    { x: ax - 0.5, y: ay + 0.5 }
-  ];
+  // 4 corners of the AGV's 1m × 1m body, rotated by heading theta
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  const localCorners = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]];
+  const corners = localCorners.map(([lx, ly]) => ({
+    x: ax + lx * cos - ly * sin,
+    y: ay + lx * sin + ly * cos
+  }));
 
   let minDist = Infinity;
   for (const obs of obstacles) {
