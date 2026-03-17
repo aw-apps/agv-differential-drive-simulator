@@ -1,7 +1,7 @@
 class Simulator {
   constructor(map) {
     this.map = map;
-    this.agv = null;
+    this.agv = new AGV();
     this.navigator = null;
     this.obstacles = [];
     this.target = null;
@@ -10,6 +10,7 @@ class Simulator {
 
     this._rafId = null;
     this._ctx = map.canvas.getContext('2d');
+    this._dt = 1 / 60;
   }
 
   start() {
@@ -28,10 +29,11 @@ class Simulator {
 
   reset() {
     this.pause();
-    this.agv = null;
+    this.agv = new AGV();
     this.target = null;
     this.obstacles = [];
     this._render();
+    this._updateTelemetry();
   }
 
   setTarget(worldX, worldY) {
@@ -56,11 +58,30 @@ class Simulator {
 
   _loop() {
     if (!this.running) return;
+
+    const steps = Math.max(1, Math.round(this.speedMultiplier));
+    for (let i = 0; i < steps; i++) {
+      this.agv.update(this._dt);
+    }
+
     this._render();
+    this._updateTelemetry();
     this._rafId = requestAnimationFrame(() => this._loop());
   }
 
   _render() {
     this.map.render(this._ctx, this.agv, this.obstacles, this.target);
+  }
+
+  _updateTelemetry() {
+    const t = this.agv.getTelemetry();
+    const el = (id) => document.getElementById(id);
+    el('tel-x').textContent = t.x.toFixed(2) + ' m';
+    el('tel-y').textContent = t.y.toFixed(2) + ' m';
+    el('tel-v').textContent = t.v.toFixed(1) + ' mm/s';
+    el('tel-w').textContent = t.omega.toFixed(3) + ' rad/s';
+    el('tel-lrpm').textContent = t.lRPM.toFixed(1);
+    el('tel-rrpm').textContent = t.rRPM.toFixed(1);
+    el('tel-drpm').textContent = t.deltaRPM.toFixed(1);
   }
 }
