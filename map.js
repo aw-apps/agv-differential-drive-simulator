@@ -1,3 +1,20 @@
+class Obstacle {
+  constructor(id, type, x, y) {
+    this.id = id;
+    this.type = type;
+    this.shape = type; // backward-compat alias used by navigator.js clearance calc
+    this.x = x;
+    this.y = y;
+  }
+
+  getBounds() {
+    if (this.type === 'circle') {
+      return { cx: this.x, cy: this.y, r: 0.5 };
+    }
+    return { cx: this.x, cy: this.y, half: 0.5 };
+  }
+}
+
 class SimMap {
   constructor(canvas) {
     this.canvas = canvas;
