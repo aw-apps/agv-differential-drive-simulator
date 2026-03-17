@@ -99,30 +99,27 @@
 
   // Control buttons
   document.getElementById('btn-start').addEventListener('click', () => {
-    // Demo: curved motion with vL ≠ vR
-    simulator.agv.vL = 0.3;
-    simulator.agv.vR = 0.5;
+    if (!simulator.target) {
+      alert('Right-click on the map to set a target first.');
+      return;
+    }
     simulator.start();
     document.getElementById('btn-start').disabled = true;
     document.getElementById('btn-pause').disabled = false;
-    document.getElementById('status-badge').className = 'badge running';
-    document.getElementById('status-badge').textContent = '運行中';
+    simulator._updateStatus('running');
   });
 
   document.getElementById('btn-pause').addEventListener('click', () => {
     simulator.pause();
     document.getElementById('btn-start').disabled = false;
     document.getElementById('btn-pause').disabled = true;
-    document.getElementById('status-badge').className = 'badge idle';
-    document.getElementById('status-badge').textContent = '暫停';
+    simulator._updateStatus('idle');
   });
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     simulator.reset();
     document.getElementById('btn-start').disabled = false;
     document.getElementById('btn-pause').disabled = true;
-    document.getElementById('status-badge').className = 'badge idle';
-    document.getElementById('status-badge').textContent = '待機';
     document.getElementById('obstacle-list').innerHTML = '';
   });
 
