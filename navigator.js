@@ -77,6 +77,17 @@ class Navigator {
       for (let wi = 0; wi < this.OMEGA_SAMPLES; wi++) {
         const omega = -this.OMEGA_MAX + (wi / (this.OMEGA_SAMPLES - 1)) * 2 * this.OMEGA_MAX;
 
+        // Convert to wheel speeds and clamp, then derive actual (v, omega)
+        // so the simulated trajectory matches what the AGV will really do.
+        const L = agv.WHEELBASE;
+        const maxWS = agv.MAX_WHEEL_SPEED;
+        let wR = v + omega * L / 2;
+        let wL = v - omega * L / 2;
+        wR = Math.max(-maxWS, Math.min(maxWS, wR));
+        wL = Math.max(-maxWS, Math.min(maxWS, wL));
+        const actualV = (wR + wL) / 2;
+        const actualOmega = (wR - wL) / L;
+
         // Simulate forward 0.5s in 5 steps of 0.1s each
         let sx = agv.x;
         let sy = agv.y;
@@ -85,9 +96,9 @@ class Navigator {
         let collide = false;
 
         for (let step = 0; step < 5; step++) {
-          sx += v * Math.cos(sTheta) * simDt;
-          sy += v * Math.sin(sTheta) * simDt;
-          sTheta += omega * simDt;
+          sx += actualV * Math.cos(sTheta) * simDt;
+          sy += actualV * Math.sin(sTheta) * simDt;
+          sTheta += actualOmega * simDt;
 
           if (_agvClearance(sx, sy, sTheta, obstacles) < this.SAFETY_MARGIN) {
             collide = true;
@@ -107,8 +118,8 @@ class Navigator {
         const clearance = _agvClearance(sx, sy, sTheta, obstacles);
         const clearanceScore = Math.min(clearance / 5.0, 1.0);
 
-        // velocity_score: v / V_MAX; penalise reverse so it's only chosen when needed
-        const velocityScore = v >= 0 ? v / this.V_MAX : v / this.V_MAX * 0.3;
+        // velocity_score: actualV / V_MAX; penalise reverse so it's only chosen when needed
+        const velocityScore = actualV >= 0 ? actualV / this.V_MAX : actualV / this.V_MAX * 0.3;
 
         const score = this._alpha * headingScore
           + this._beta * clearanceScore
@@ -116,8 +127,8 @@ class Navigator {
 
         if (score > bestScore) {
           bestScore = score;
-          bestV = v;
-          bestOmega = omega;
+          bestV = actualV;
+          bestOmega = actualOmega;
         }
       }
     }

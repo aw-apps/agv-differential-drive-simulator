@@ -102,6 +102,7 @@ class SimMap {
 
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
       const canvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
       const canvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
