@@ -250,19 +250,26 @@ class SimMap {
     ctx.translate(cp.x, cp.y);
     ctx.rotate(-theta); // canvas Y is inverted
 
-    ctx.fillStyle = '#606878';
-    ctx.strokeStyle = '#9aa0b0';
-    ctx.lineWidth = 1;
+    // Blue 1m×1m body
+    ctx.fillStyle = '#2255cc';
+    ctx.strokeStyle = '#6699ff';
+    ctx.lineWidth = 1.5;
     ctx.fillRect(-s / 2, -s / 2, s, s);
     ctx.strokeRect(-s / 2, -s / 2, s, s);
 
-    // Direction arrow pointing +X
-    ctx.fillStyle = '#00d4aa';
+    // White direction arrow pointing forward (+X in world)
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(s * 0.35, 0);
-    ctx.lineTo(-s * 0.15, -s * 0.18);
-    ctx.lineTo(-s * 0.15, s * 0.18);
+    ctx.moveTo(s * 0.38, 0);
+    ctx.lineTo(-s * 0.12, -s * 0.20);
+    ctx.lineTo(-s * 0.12, s * 0.20);
     ctx.closePath();
+    ctx.fill();
+
+    // Yellow center dot
+    ctx.fillStyle = '#ffdd00';
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(2, s * 0.07), 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
