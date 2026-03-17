@@ -23,6 +23,7 @@ class SimMap {
     this.scale = 15; // px/m
     this.panX = 0;
     this.panY = 0;
+    this.paused = true; // used to show dashed AGV bounding box when not running
 
     this._dragging = false;
     this._dragMoved = false;
@@ -117,11 +118,16 @@ class SimMap {
     const w = this.canvas.width;
     const h = this.canvas.height;
 
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#0f1117';
     ctx.fillRect(0, 0, w, h);
 
     this._drawGrid(ctx);
+
+    if (agv) {
+      this._drawTrail(ctx, agv);
+    }
 
     if (obstacles) {
       for (const obs of obstacles) {
@@ -134,6 +140,30 @@ class SimMap {
     }
 
     this._drawAGV(ctx, agv);
+  }
+
+  _drawTrail(ctx, agv) {
+    if (!agv.trail || agv.trail.length < 2) return;
+    const trail = agv.trail;
+    const n = trail.length;
+
+    ctx.save();
+    ctx.lineWidth = Math.max(1, this.scale * 0.08);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (let i = 1; i < n; i++) {
+      const alpha = (i / n) * 0.6;
+      ctx.strokeStyle = `rgba(79, 142, 247, ${alpha})`;
+      const p0 = this.worldToCanvas(trail[i - 1].x, trail[i - 1].y);
+      const p1 = this.worldToCanvas(trail[i].x, trail[i].y);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
 
   _drawGrid(ctx) {
@@ -296,6 +326,15 @@ class SimMap {
     ctx.beginPath();
     ctx.arc(0, 0, Math.max(2, s * 0.07), 0, Math.PI * 2);
     ctx.fill();
+
+    // Dashed bounding box outline when simulation is paused
+    if (this.paused) {
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = '#4f8ef7';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-s / 2 - 3, -s / 2 - 3, s + 6, s + 6);
+      ctx.setLineDash([]);
+    }
 
     ctx.restore();
   }

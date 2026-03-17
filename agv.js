@@ -9,6 +9,7 @@ class AGV {
     this.theta = theta !== undefined ? theta : 0;
     this.vL = 0; // left wheel speed m/s
     this.vR = 0; // right wheel speed m/s
+    this.trail = []; // path history: [{x, y}, ...], max 500 points
   }
 
   update(dt) {
@@ -17,6 +18,8 @@ class AGV {
     this.x += v * Math.cos(this.theta) * dt;
     this.y += v * Math.sin(this.theta) * dt;
     this.theta += omega * dt;
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 500) this.trail.shift();
   }
 
   getRPM() {
@@ -48,5 +51,6 @@ class AGV {
     this.theta = 0;
     this.vL = 0;
     this.vR = 0;
+    this.trail = [];
   }
 }
