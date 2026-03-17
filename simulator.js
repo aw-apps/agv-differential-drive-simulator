@@ -77,7 +77,7 @@ class Simulator {
         const result = this.navigator.computeStep(this._dt);
         // Determine status: avoiding if clearance is low
         if (result) {
-          const clearance = _agvClearance(this.agv.x, this.agv.y, this.obstacles);
+          const clearance = _agvClearance(this.agv.x, this.agv.y, this.agv.theta, this.obstacles);
           this._navStatus = clearance < 1.5 ? 'avoiding' : 'running';
         }
       }
