@@ -21,8 +21,9 @@
   window.simMap = new SimMap(canvas);
   window.simulator = new Simulator(simMap);
 
-  // Initial render
+  // Initial render + telemetry
   simulator._render();
+  simulator._updateTelemetry();
 
   // Right-click: set target
   canvas.addEventListener('contextmenu', e => {
@@ -98,6 +99,9 @@
 
   // Control buttons
   document.getElementById('btn-start').addEventListener('click', () => {
+    // Demo: curved motion with vL ≠ vR
+    simulator.agv.vL = 0.3;
+    simulator.agv.vR = 0.5;
     simulator.start();
     document.getElementById('btn-start').disabled = true;
     document.getElementById('btn-pause').disabled = false;
